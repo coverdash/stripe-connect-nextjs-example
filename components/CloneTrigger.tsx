@@ -1,7 +1,11 @@
 import { getConnectedAccountIdClient } from "@/lib/storage";
 import { useState } from "react";
 
-export default function CloneTrigger() {
+type CloneTriggerProps = {
+  onCloneSuccess?: (data: { paymentMethodId: string; customerId: string }) => void;
+};
+
+export default function CloneTrigger({ onCloneSuccess }: CloneTriggerProps) {
   const [customerId, setCustomerId] = useState("");
   const [paymentMethodId, setPaymentMethodId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -40,6 +44,10 @@ export default function CloneTrigger() {
       }
 
       setResult(data);
+      onCloneSuccess?.({
+        paymentMethodId: data.paymentMethodId,
+        customerId: data.customerId,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -51,7 +59,8 @@ export default function CloneTrigger() {
     <div className="bg-white rounded-lg shadow-lg p-6">
       <h2 className="text-2xl font-bold mb-4">Clone Payment Method</h2>
       <p className="text-sm text-gray-600 mb-4">
-        Clone a payment method from your platform account to the connected account
+        Clone a payment method from your platform account, create a customer on
+        the connected account, and attach the cloned payment method.
       </p>
 
       <form onSubmit={handleClone} className="space-y-4">
@@ -94,7 +103,7 @@ export default function CloneTrigger() {
           disabled={isLoading}
           className="w-full bg-[#635BFF] text-white py-2 px-4 rounded-md hover:bg-[#4F46E5] disabled:opacity-50"
         >
-          {isLoading ? "Cloning..." : "Clone Payment Method"}
+          {isLoading ? "Cloning..." : "Clone + Attach Payment Method"}
         </button>
       </form>
 
@@ -105,12 +114,17 @@ export default function CloneTrigger() {
       )}
 
       {result && (
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
+        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md space-y-2">
           <p className="text-green-800 font-semibold">
-            Payment method cloned successfully!
+            Payment method cloned and attached successfully!
           </p>
-          <p className="text-sm text-gray-700 mt-2">
-            Cloned Payment Method ID: <code className="bg-gray-100 px-2 py-1 rounded">{result.id}</code>
+          <p className="text-sm text-gray-700">
+            Cloned Payment Method ID:{" "}
+            <code className="bg-gray-100 px-2 py-1 rounded">{result.paymentMethodId}</code>
+          </p>
+          <p className="text-sm text-gray-700">
+            Connected Account Customer ID:{" "}
+            <code className="bg-gray-100 px-2 py-1 rounded">{result.customerId}</code>
           </p>
           <details className="mt-2">
             <summary className="cursor-pointer text-sm text-gray-600">

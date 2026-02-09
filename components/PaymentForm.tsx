@@ -1,14 +1,35 @@
 import { getConnectedAccountIdClient } from "@/lib/storage";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-export default function PaymentForm() {
+type PaymentFormProps = {
+  defaultPaymentMethodId?: string;
+  defaultCustomerId?: string;
+};
+
+export default function PaymentForm({
+  defaultPaymentMethodId,
+  defaultCustomerId,
+}: PaymentFormProps) {
   const [paymentMethodId, setPaymentMethodId] = useState("");
+  const [customerId, setCustomerId] = useState("");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("usd");
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (defaultPaymentMethodId) {
+      setPaymentMethodId(defaultPaymentMethodId);
+    }
+  }, [defaultPaymentMethodId]);
+
+  useEffect(() => {
+    if (defaultCustomerId) {
+      setCustomerId(defaultCustomerId);
+    }
+  }, [defaultCustomerId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +52,7 @@ export default function PaymentForm() {
         body: JSON.stringify({
           connectedAccountId,
           paymentMethodId,
+          customerId,
           amount: parseInt(amount) * 100, // Convert to cents
           currency,
           description,
@@ -54,6 +76,11 @@ export default function PaymentForm() {
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
       <h2 className="text-2xl font-bold mb-4">Create Direct Charge</h2>
+      <p className="text-sm text-gray-600 mb-4">
+        Charges use the connected account customer and attached payment method,
+        so Coverdash can reuse them for future renewals or installments without
+        requiring the partner to collect payment details again.
+      </p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -69,6 +96,22 @@ export default function PaymentForm() {
           />
           <p className="text-xs text-gray-500 mt-1">
             The cloned payment method ID from the connected account
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Connected Account Customer ID
+          </label>
+          <input
+            type="text"
+            value={customerId}
+            onChange={(e) => setCustomerId(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            placeholder="cus_xxxxxxxxxxxxx"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Customer created during clone step (recommended for reusable charges)
           </p>
         </div>
 

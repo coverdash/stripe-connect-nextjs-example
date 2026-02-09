@@ -9,6 +9,8 @@ export default function Home() {
   const [connectedAccountId, setConnectedAccountId] = useState<string | null>(
     null
   );
+  const [clonedPaymentMethodId, setClonedPaymentMethodId] = useState("");
+  const [connectedCustomerId, setConnectedCustomerId] = useState("");
 
   useEffect(() => {
     const accountId = getConnectedAccountIdClient();
@@ -21,6 +23,8 @@ export default function Home() {
       localStorage.removeItem("stripe_connected_account_id");
       setIsConnected(false);
       setConnectedAccountId(null);
+      setClonedPaymentMethodId("");
+      setConnectedCustomerId("");
     }
   };
 
@@ -79,18 +83,30 @@ export default function Home() {
                   First, set up a payment method on your platform account (use
                   Stripe Dashboard)
                 </li>
-                <li>Clone the payment method to the connected account below</li>
                 <li>
-                  Use the cloned payment method ID to create a direct charge
+                  Clone the payment method and create a connected-account customer
                 </li>
                 <li>
-                  The charge will appear on the connected account's dashboard
+                  Use the cloned payment method + connected customer ID to create
+                  a direct charge
+                </li>
+                <li>
+                  Coverdash can then reuse that customer + payment method for
+                  future renewals/installments
                 </li>
               </ol>
             </div>
 
-            <CloneTrigger />
-            <PaymentForm />
+            <CloneTrigger
+              onCloneSuccess={({ paymentMethodId, customerId }) => {
+                setClonedPaymentMethodId(paymentMethodId);
+                setConnectedCustomerId(customerId);
+              }}
+            />
+            <PaymentForm
+              defaultPaymentMethodId={clonedPaymentMethodId}
+              defaultCustomerId={connectedCustomerId}
+            />
 
             <div className="bg-gray-100 rounded-lg p-6">
               <h3 className="font-bold mb-2">📚 Documentation</h3>

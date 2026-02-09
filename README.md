@@ -174,7 +174,11 @@ sequenceDiagram
     PartnerAPI->>Stripe: Clone payment method to Coverdash<br/>PaymentMethods.create({customer, payment_method},<br/>{stripeAccount: "acct_xxxCoverdash"})
     Stripe-->>PartnerAPI: Returns pm_cloned (on Coverdash's account)
 
-    PartnerAPI->>Stripe: Create direct charge<br/>PaymentIntents.create({amount, payment_method: pm_cloned},<br/>{stripeAccount: "acct_xxxCoverdash"})
+    PartnerAPI->>Stripe: Create connected-account customer<br/>Customers.create(..., {stripeAccount: "acct_xxxCoverdash"})
+    Stripe-->>PartnerAPI: Returns cus_coverdash
+    PartnerAPI->>Stripe: Attach pm_cloned + set default PM on cus_coverdash
+
+    PartnerAPI->>Stripe: Create direct charge<br/>PaymentIntents.create({amount, customer: cus_coverdash, payment_method: pm_cloned},<br/>{stripeAccount: "acct_xxxCoverdash"})
     Stripe-->>Coverdash: Payment lands in Coverdash's Stripe
     Stripe-->>PartnerAPI: PaymentIntent confirmed
 
@@ -182,6 +186,7 @@ sequenceDiagram
     Partner-->>Customer: Policy activated ✅
 
     Note over Customer,Coverdash: Key: Partner's API key makes all calls.<br/>stripeAccount header routes to Coverdash.
+    Note over Coverdash: Coverdash can reuse cus_coverdash + default PM for renewals/installments.
 ```
 
 ### OAuth Flow
@@ -196,15 +201,16 @@ sequenceDiagram
 
 1. Platform A has a payment method stored on their account
 2. Using the Payment Methods API, they clone it to the connected account
-3. The cloned payment method is an independent object with a unique ID
-4. Platform A can now use this cloned payment method to charge the customer
+3. Platform A creates a customer on the connected account
+4. Platform A attaches the cloned payment method to that customer and sets it as default
+5. Platform A can now use this customer + payment method pairing for immediate and future charges
 
 ### Direct Charges
 
-1. Platform A creates a PaymentIntent on the connected account
+1. Platform A creates a PaymentIntent on the connected account using `customer` + `payment_method`
 2. The charge appears on the connected account's dashboard
-3. The cloned payment method is consumed (one-time use)
-4. For additional charges, clone the payment method again
+3. Coverdash can reuse the connected-account customer for future off-session billing (renewals/installments)
+4. Partner platform involvement is only needed for initial authorization/setup
 
 ## API Endpoints
 
@@ -217,7 +223,7 @@ sequenceDiagram
 
 ⚠️ **Payment Method Support**: Can only clone `card` and `us_bank_account` payment method types
 
-⚠️ **One-Time Use**: Each cloned payment method is consumed after one charge (must clone again for additional charges)
+⚠️ **Initial Setup Required**: You must clone and attach a payment method to a connected-account customer at least once before running reusable off-session charges
 
 ⚠️ **No Sync**: Cloned payment methods don't sync with the original if updated
 
@@ -237,7 +243,7 @@ sequenceDiagram
 | Feature | Braintree | Stripe |
 |---------|-----------|--------|
 | **Mechanism** | Grant nonce (temporary token) | Clone PaymentMethod |
-| **Reusability** | One-time use, call grant() again | One-time use, clone again |
+| **Reusability** | One-time use, call grant() again | Reusable after cloning + attaching to a connected-account customer |
 | **Supported Methods** | Cards, PayPal, Venmo, etc. | Cards and US bank accounts only |
 | **OAuth** | Standard OAuth | Stripe Connect OAuth |
 | **API Complexity** | Moderate | Moderate |

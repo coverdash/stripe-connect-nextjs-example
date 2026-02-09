@@ -10,8 +10,14 @@ export default async function handler(
   }
 
   try {
-    const { connectedAccountId, paymentMethodId, amount, currency, description } =
-      req.body;
+    const {
+      connectedAccountId,
+      paymentMethodId,
+      customerId,
+      amount,
+      currency,
+      description,
+    } = req.body;
 
     if (!connectedAccountId || !paymentMethodId || !amount || !currency) {
       return res.status(400).json({
@@ -25,7 +31,8 @@ export default async function handler(
       paymentMethodId,
       amount,
       currency,
-      description
+      description,
+      customerId
     );
 
     return res.json(paymentIntent);

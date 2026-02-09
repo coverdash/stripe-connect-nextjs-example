@@ -1,4 +1,4 @@
-import { clonePaymentMethod } from "@/lib/stripe";
+import { cloneAndAttachPaymentMethod } from "@/lib/stripe";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
@@ -18,13 +18,18 @@ export default async function handler(
       });
     }
 
-    const clonedPM = await clonePaymentMethod(
+    const { customer, paymentMethod } = await cloneAndAttachPaymentMethod(
       connectedAccountId,
       customerId,
       paymentMethodId
     );
 
-    return res.json(clonedPM);
+    return res.json({
+      paymentMethodId: paymentMethod.id,
+      customerId: customer.id,
+      customer,
+      paymentMethod,
+    });
   } catch (error) {
     console.error("Payment method cloning error:", error);
     return res.status(500).json({
