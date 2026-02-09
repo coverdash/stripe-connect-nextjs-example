@@ -4,7 +4,7 @@ import type { OAuthTokenResponse } from "./types";
 export function generateOAuthUrl(state?: string): string {
   const params = new URLSearchParams({
     response_type: "code",
-    client_id: config.stripe.clientId,
+    client_id: config.stripe.partnerClientId,
     scope: "read_write",
     redirect_uri: getRedirectUri(),
   });
@@ -23,7 +23,7 @@ export async function exchangeCodeForToken(
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Bearer ${config.stripe.secretKey}`,
+      Authorization: `Bearer ${config.stripe.partnerSecretKey}`,
     },
     body: new URLSearchParams({
       grant_type: "authorization_code",
@@ -46,10 +46,10 @@ export async function deauthorizeAccount(
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Bearer ${config.stripe.secretKey}`,
+      Authorization: `Bearer ${config.stripe.partnerSecretKey}`,
     },
     body: new URLSearchParams({
-      client_id: config.stripe.clientId,
+      client_id: config.stripe.partnerClientId,
       stripe_user_id,
     }),
   });

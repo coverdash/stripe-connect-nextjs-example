@@ -1,7 +1,8 @@
 export const config = {
   stripe: {
-    clientId: process.env.NEXT_PUBLIC_STRIPE_CLIENT_ID || "",
-    secretKey: process.env.STRIPE_SECRET_KEY || "",
+    partnerClientId: process.env.NEXT_PUBLIC_PARTNER_STRIPE_CLIENT_ID || "",
+    partnerSecretKey: process.env.PARTNER_STRIPE_SECRET_KEY || "",
+    coverdashSecretKey: process.env.COVERDASH_STRIPE_SECRET_KEY || "",
     environment: process.env.NEXT_PUBLIC_STRIPE_ENVIRONMENT || "test",
   },
   app: {

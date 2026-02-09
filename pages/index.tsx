@@ -2,6 +2,7 @@ import CloneTrigger from "@/components/CloneTrigger";
 import ConnectButton from "@/components/ConnectButton";
 import PaymentForm from "@/components/PaymentForm";
 import { getConnectedAccountIdClient } from "@/lib/storage";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function Home() {
@@ -36,8 +37,8 @@ export default function Home() {
             Stripe Connect OAuth Example
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Demonstrates how to connect a Stripe account via OAuth and clone
-            payment methods for direct charges
+            Demonstrates how a partner connects a Coverdash account via OAuth, clones
+            payment methods, and creates direct charges
           </p>
         </div>
 
@@ -47,8 +48,8 @@ export default function Home() {
               Connect Your Stripe Account
             </h2>
             <p className="text-gray-600 mb-6">
-              Click the button below to authorize this platform to process
-              payments on your behalf
+              Click the button below to authorize the partner to process
+              payments on your Coverdash account
             </p>
             <ConnectButton />
           </div>
@@ -80,7 +81,7 @@ export default function Home() {
               </h3>
               <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800">
                 <li>
-                  First, set up a payment method on your platform account (use
+                  First, set up a payment method on your partner account (use
                   Stripe Dashboard)
                 </li>
                 <li>
@@ -95,6 +96,15 @@ export default function Home() {
                   future renewals/installments
                 </li>
               </ol>
+            </div>
+
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-sm text-emerald-900">
+              After the partner clones a PM and creates a customer on Coverdash's account, Coverdash can charge independently using their own API key.
+              <div className="mt-2">
+                <Link href="/coverdash-charge" className="text-[#635BFF] hover:underline font-medium">
+                  Go to Coverdash Independent Charge →
+                </Link>
+              </div>
             </div>
 
             <CloneTrigger

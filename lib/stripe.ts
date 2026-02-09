@@ -2,7 +2,13 @@ import Stripe from "stripe";
 import { config } from "./config";
 
 export function getStripeClient(): Stripe {
-  return new Stripe(config.stripe.secretKey, {
+  return new Stripe(config.stripe.partnerSecretKey, {
+    apiVersion: "2023-10-16",
+  });
+}
+
+export function getCoverdashStripeClient(): Stripe {
+  return new Stripe(config.stripe.coverdashSecretKey, {
     apiVersion: "2023-10-16",
   });
 }
@@ -81,21 +87,21 @@ export async function createCustomerOnConnectedAccount(
 
 export async function cloneAndAttachPaymentMethod(
   connectedAccountId: string,
-  platformCustomerId: string,
+  partnerCustomerId: string,
   paymentMethodId: string
 ): Promise<{ customer: Stripe.Customer; paymentMethod: Stripe.PaymentMethod }> {
   const stripe = getStripeClient();
 
   const clonedPaymentMethod = await clonePaymentMethod(
     connectedAccountId,
-    platformCustomerId,
+    partnerCustomerId,
     paymentMethodId
   );
 
   const connectedCustomer = await createCustomerOnConnectedAccount(
     connectedAccountId,
-    `${platformCustomerId}@example.com`,
-    `Connected customer for ${platformCustomerId}`
+    `${partnerCustomerId}@example.com`,
+    `Coverdash customer for ${partnerCustomerId}`
   );
 
   await stripe.paymentMethods.attach(
@@ -124,6 +130,26 @@ export async function cloneAndAttachPaymentMethod(
     customer: connectedCustomer,
     paymentMethod: clonedPaymentMethod,
   };
+}
+
+export async function createCoverdashIndependentCharge(
+  customerId: string,
+  paymentMethodId: string,
+  amount: number,
+  currency: string,
+  description?: string
+): Promise<Stripe.PaymentIntent> {
+  const stripe = getCoverdashStripeClient();
+
+  return stripe.paymentIntents.create({
+    customer: customerId,
+    payment_method: paymentMethodId,
+    amount,
+    currency,
+    description,
+    confirm: true,
+    off_session: true,
+  });
 }
 
 export async function getConnectedAccountDetails(

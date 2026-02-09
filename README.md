@@ -1,287 +1,101 @@
 # Stripe Connect OAuth Integration Example
 
-This Next.js TypeScript project demonstrates a Stripe Connect OAuth integration flow between two merchants. It showcases how Platform A can obtain authorization from Merchant B to perform direct charges using cloned payment methods.
+This Next.js + TypeScript demo shows a Stripe Connect OAuth flow between:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fcoverdash%2Fstripe-connect-nextjs-example&env=NEXT_PUBLIC_STRIPE_CLIENT_ID,STRIPE_SECRET_KEY,NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL)
+- **Partner** (platform account, owns OAuth app)
+- **Coverdash** (connected account, receives funds)
 
-## Stripe Connect End-to-End Flow Diagram
+It demonstrates two phases:
+
+1. **Partner setup flow** (OAuth + payment method cloning + connected-account charge)
+2. **Coverdash independent charging** using Coverdash's own Stripe API key
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fcoverdash%2Fstripe-connect-nextjs-example&env=NEXT_PUBLIC_PARTNER_STRIPE_CLIENT_ID,PARTNER_STRIPE_SECRET_KEY,COVERDASH_STRIPE_SECRET_KEY,NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL)
+
+## Two-Phase Flow Diagram
 
 ```mermaid
 sequenceDiagram
-    participant Partner
-    participant PartnerStripe as Partner Stripe Account
-    participant CoverdashStripe as Coverdash Stripe Account
     participant Customer
+    participant PartnerApp as Partner App
+    participant PartnerAPI as Partner Backend
+    participant Stripe as Stripe API
+    participant Coverdash as Coverdash Stripe Account
 
-    rect rgb(235, 245, 255)
-        Note over Partner, CoverdashStripe: OAuth Connect Flow
-        Partner->>PartnerStripe: Initiate OAuth connect flow with Coverdash
-        PartnerStripe->>Partner: Redirect to Stripe OAuth authorization
-        Partner->>PartnerStripe: Authorize Coverdash as connected account
-        PartnerStripe->>CoverdashStripe: Return connected account ID
-        Note over CoverdashStripe: Connected account is now linked for future operations
+    rect rgb(235,245,255)
+        Note over PartnerApp,Coverdash: Phase 1: Partner setup
+        Coverdash->>Stripe: OAuth authorize Partner app
+        Stripe-->>PartnerAPI: connected_account_id (acct_xxx)
+        Customer->>PartnerApp: Add payment method on Partner side
+        PartnerAPI->>Stripe: Clone PM to Coverdash (stripeAccount: acct_xxx)
+        PartnerAPI->>Stripe: Create Coverdash customer + attach cloned PM
+        PartnerAPI->>Stripe: Optional direct charge (stripeAccount: acct_xxx)
     end
 
-    rect rgb(240, 255, 244)
-        Note over Customer, CoverdashStripe: Payment Method Cloning
-        Customer->>Partner: Make payment on Partner platform
-        Partner->>PartnerStripe: Create/store customer's payment method
-        PartnerStripe->>CoverdashStripe: Clone customer's payment method
-        Note over CoverdashStripe: Cloned payment method is now available on Coverdash side
-    end
-
-    rect rgb(255, 245, 238)
-        Note over CoverdashStripe, Customer: Direct Charges
-        CoverdashStripe->>CoverdashStripe: Create direct charge with cloned payment method
-        CoverdashStripe->>Customer: Process charge directly (not through Partner)
-        Note over Customer: Customer is charged securely without re-entering payment details
+    rect rgb(240,255,244)
+        Note over Coverdash,Stripe: Phase 2: Coverdash independent charging
+        Coverdash->>Stripe: PaymentIntents.create(customer, payment_method)\nusing COVERDASH_STRIPE_SECRET_KEY
+        Stripe-->>Coverdash: Charge confirmed on Coverdash account
     end
 ```
 
-## Overview
+## Environment Variables
 
-In this example, Platform A provides this application to Merchant B, allowing them to:
+Copy `.env.example` to `.env`:
 
-- Grant OAuth permissions to Platform A
-- Allow access to customer payment methods via cloning
-- Enable direct charges on the connected account
-
-The integration uses the following Stripe APIs:
-
-- [Connect OAuth](https://docs.stripe.com/connect/oauth-standard-accounts) - For partner authorization
-- [Payment Methods API](https://docs.stripe.com/api/payment_methods) - For cloning payment methods
-- [Payment Intents API](https://docs.stripe.com/api/payment_intents) - For creating direct charges
-- [Customers API](https://docs.stripe.com/api/customers) - For managing customers
-
-## Features
-
-- OAuth connection flow with Stripe Connect
-- Payment method cloning across accounts
-- Direct charge processing on connected accounts
-- Real-time transaction status updates
-- Error handling and user feedback
-- TypeScript type safety
-
-## Prerequisites
-
-Before running this application, you'll need:
-
-- Node.js (v18 or higher)
-- npm or yarn package manager
-- Stripe account (for testing, use test mode)
-- Environment variables (see `.env.example`)
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/coverdash/stripe-connect-nextjs-example.git
-cd stripe-connect-nextjs-example
-```
-
-2. Install dependencies:
-```bash
-npm install
-# or
-yarn install
-```
-
-3. Set up environment variables:
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and add your Stripe credentials.
-
-## Configuration
-
-Create a `.env` file in the root directory with the following variables:
+Required variables:
 
 ```env
-# Client Environment Variables (Platform/Merchant A)
+# Client Environment Variables (Partner app)
 NEXT_PUBLIC_STRIPE_ENVIRONMENT=test
-NEXT_PUBLIC_STRIPE_CLIENT_ID=ca_xxxxxxxxxxxxxxxxxxxxx
+NEXT_PUBLIC_PARTNER_STRIPE_CLIENT_ID=ca_xxxxxxxxxxxxxxxxxxxxx
 NEXT_PUBLIC_REDIRECT_URI=/oauth-callback
 
-# Server Environment Variables (Platform/Merchant A)
-STRIPE_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxx
+# Server Environment Variables
+PARTNER_STRIPE_SECRET_KEY=sk_test_partner_xxxxxxxxxxxxxxxxxxxxx
+COVERDASH_STRIPE_SECRET_KEY=sk_test_coverdash_xxxxxxxxxxxxxxxxxxxxx
 
-# For development only
+# Local development
 NEXT_PUBLIC_VERCEL_ENV=development
 NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL=localhost:3000
 ```
 
-### Getting Your Credentials
+## Pages
 
-1. **Client ID**: 
-   - Go to https://dashboard.stripe.com/settings/connect
-   - Enable Standard accounts
-   - Copy your client ID
+- `/` - Main Partner setup flow (OAuth + clone + direct connected-account charge)
+- `/coverdash-charge` - **Coverdash Independent Charge** page
+  - Uses `COVERDASH_STRIPE_SECRET_KEY`
+  - Creates PaymentIntents without `stripeAccount` header
+  - Inputs: Customer ID, Payment Method ID, Amount, Currency, Description
 
-2. **Secret Key**:
-   - Go to https://dashboard.stripe.com/test/apikeys
-   - Copy your test secret key
+## API Endpoints
 
-3. **Redirect URI**:
-   - Add `http://localhost:3000/oauth-callback` to your OAuth redirect URIs in the Stripe Dashboard
-   - For production, add your production domain's callback URL
+- `POST /api/oauth/token` - Exchange OAuth code for connected account
+- `POST /api/clone/payment-method` - Clone PM to connected account and attach
+- `POST /api/customers` - Create connected-account customer
+- `POST /api/transactions` - Partner-driven connected-account charge
+- `POST /api/coverdash/charge` - Coverdash independent charge (own key)
 
-## Running the Application
-
-### Development Mode
+## Run
 
 ```bash
-npm run dev
-# or
+yarn install
 yarn dev
 ```
 
-The application will be available at http://localhost:3000
-
-### Production Build
+Build:
 
 ```bash
-npm run build
-npm start
-# or
 yarn build
 yarn start
 ```
 
-## How It Works
+## Notes
 
-### User Journey: Partner Charging a Customer for Insurance
-
-```mermaid
-sequenceDiagram
-    participant Customer as Customer
-    participant Partner as Partner Platform
-    participant PartnerAPI as Partner Backend
-    participant Stripe as Stripe API
-    participant Coverdash as Coverdash (Connected Account)
-
-    Note over Coverdash,Partner: One-Time Setup
-    Coverdash->>Stripe: OAuth: Authorize Partner platform
-    Stripe-->>PartnerAPI: Returns acct_xxxCoverdash (connected account ID)
-    PartnerAPI->>PartnerAPI: Store connected account ID
-
-    Note over Customer,Coverdash: Customer Onboarding
-    Customer->>Partner: Signs up, adds payment method
-    Partner->>PartnerAPI: Store customer + payment method (pm_original)
-
-    Note over Customer,Coverdash: Policy Purchase
-    Customer->>Partner: Selects Coverdash insurance policy
-    PartnerAPI->>Stripe: Clone payment method to Coverdash<br/>PaymentMethods.create({customer, payment_method},<br/>{stripeAccount: "acct_xxxCoverdash"})
-    Stripe-->>PartnerAPI: Returns pm_cloned (on Coverdash's account)
-
-    PartnerAPI->>Stripe: Create connected-account customer<br/>Customers.create(..., {stripeAccount: "acct_xxxCoverdash"})
-    Stripe-->>PartnerAPI: Returns cus_coverdash
-    PartnerAPI->>Stripe: Attach pm_cloned + set default PM on cus_coverdash
-
-    PartnerAPI->>Stripe: Create direct charge<br/>PaymentIntents.create({amount, customer: cus_coverdash, payment_method: pm_cloned},<br/>{stripeAccount: "acct_xxxCoverdash"})
-    Stripe-->>Coverdash: Payment lands in Coverdash's Stripe
-    Stripe-->>PartnerAPI: PaymentIntent confirmed
-
-    PartnerAPI-->>Partner: Charge successful
-    Partner-->>Customer: Policy activated ✅
-
-    Note over Customer,Coverdash: Key: Partner's API key makes all calls.<br/>stripeAccount header routes to Coverdash.
-    Note over Coverdash: Coverdash can reuse cus_coverdash + default PM for renewals/installments.
-```
-
-### OAuth Flow
-
-1. Merchant B clicks "Connect with Stripe" button
-2. They are redirected to Stripe's OAuth consent page
-3. Upon authorization, Stripe redirects back with an authorization code
-4. The application exchanges this code for a connected account ID
-5. Platform A can now clone payment methods and create charges on Merchant B's behalf
-
-### Payment Method Cloning
-
-1. Platform A has a payment method stored on their account
-2. Using the Payment Methods API, they clone it to the connected account
-3. Platform A creates a customer on the connected account
-4. Platform A attaches the cloned payment method to that customer and sets it as default
-5. Platform A can now use this customer + payment method pairing for immediate and future charges
-
-### Direct Charges
-
-1. Platform A creates a PaymentIntent on the connected account using `customer` + `payment_method`
-2. The charge appears on the connected account's dashboard
-3. Coverdash can reuse the connected-account customer for future off-session billing (renewals/installments)
-4. Partner platform involvement is only needed for initial authorization/setup
-
-## API Endpoints
-
-- `POST /api/oauth/token` - Exchange authorization code for connected account ID
-- `POST /api/clone/payment-method` - Clone a payment method to connected account
-- `POST /api/transactions` - Create a direct charge on connected account
-- `POST /api/customers` - Create a customer on connected account
-
-## Important Limitations
-
-⚠️ **Payment Method Support**: Can only clone `card` and `us_bank_account` payment method types
-
-⚠️ **Initial Setup Required**: You must clone and attach a payment method to a connected-account customer at least once before running reusable off-session charges
-
-⚠️ **No Sync**: Cloned payment methods don't sync with the original if updated
-
-⚠️ **Demo Storage**: This demo uses in-memory and localStorage for simplicity. Use a secure database in production.
-
-## Security Considerations
-
-- All sensitive credentials are stored in environment variables
-- OAuth state parameter is used for CSRF protection
-- Tokens are managed securely server-side (in production, use encrypted database)
-- Never expose secret keys to the client
-
-> **Warning**: This project is a demonstration and should not be used in production as-is. Implement proper authentication, secure token storage (database or secure session management), and follow all Stripe security best practices.
-
-## Comparison with Braintree
-
-| Feature | Braintree | Stripe |
-|---------|-----------|--------|
-| **Mechanism** | Grant nonce (temporary token) | Clone PaymentMethod |
-| **Reusability** | One-time use, call grant() again | Reusable after cloning + attaching to a connected-account customer |
-| **Supported Methods** | Cards, PayPal, Venmo, etc. | Cards and US bank accounts only |
-| **OAuth** | Standard OAuth | Stripe Connect OAuth |
-| **API Complexity** | Moderate | Moderate |
-
-## Development
-
-### Project Structure
-
-```
-├── components/          # React components
-│   ├── ConnectButton.tsx
-│   ├── OAuthCallback.tsx
-│   ├── CloneTrigger.tsx
-│   └── PaymentForm.tsx
-├── lib/                # Utility functions
-│   ├── stripe.ts       # Stripe client functions
-│   ├── oauth.ts        # OAuth flow helpers
-│   ├── config.ts       # Configuration management
-│   ├── storage.ts      # Token storage (demo only)
-│   └── types.ts        # TypeScript types
-├── pages/              # Next.js pages
-│   ├── api/            # API routes
-│   ├── index.tsx       # Main page
-│   └── oauth-callback.tsx
-└── styles/             # Global styles
-```
-
-## Resources
-
-- [Stripe Connect Documentation](https://docs.stripe.com/connect)
-- [OAuth Standard Accounts](https://docs.stripe.com/connect/oauth-standard-accounts)
-- [Payment Method Cloning](https://docs.stripe.com/connect/direct-charges-multiple-accounts)
-- [Stripe API Reference](https://docs.stripe.com/api)
-
-## License
-
-MIT
-
-## Contributing
-
-Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
+- Partner key is used for OAuth and Stripe Connect (`stripeAccount`) operations.
+- Coverdash key is used for independent charging after setup is complete.
+- This is a demo; add proper auth, persistence, and production hardening before real use.

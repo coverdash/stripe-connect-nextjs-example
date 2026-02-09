@@ -1,7 +1,7 @@
 {
   "name": "stripe-connect-nextjs-example",
   "version": "1.0.0",
-  "description": "A Next.js TypeScript demo of Stripe Connect OAuth integration between two merchants",
+  "description": "A Next.js TypeScript demo of Stripe Connect OAuth integration between Partner and Coverdash",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

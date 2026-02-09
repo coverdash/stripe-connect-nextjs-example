@@ -59,14 +59,14 @@ export default function CloneTrigger({ onCloneSuccess }: CloneTriggerProps) {
     <div className="bg-white rounded-lg shadow-lg p-6">
       <h2 className="text-2xl font-bold mb-4">Clone Payment Method</h2>
       <p className="text-sm text-gray-600 mb-4">
-        Clone a payment method from your platform account, create a customer on
+        Clone a payment method from your partner account, create a customer on
         the connected account, and attach the cloned payment method.
       </p>
 
       <form onSubmit={handleClone} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Platform Customer ID
+            Partner Customer ID
           </label>
           <input
             type="text"
@@ -77,13 +77,13 @@ export default function CloneTrigger({ onCloneSuccess }: CloneTriggerProps) {
             required
           />
           <p className="text-xs text-gray-500 mt-1">
-            Customer ID from your platform account
+            Customer ID from your partner account
           </p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Platform Payment Method ID
+            Partner Payment Method ID
           </label>
           <input
             type="text"
@@ -94,7 +94,7 @@ export default function CloneTrigger({ onCloneSuccess }: CloneTriggerProps) {
             required
           />
           <p className="text-xs text-gray-500 mt-1">
-            Payment method ID from your platform account
+            Payment method ID from your partner account
           </p>
         </div>
 
@@ -123,7 +123,7 @@ export default function CloneTrigger({ onCloneSuccess }: CloneTriggerProps) {
             <code className="bg-gray-100 px-2 py-1 rounded">{result.paymentMethodId}</code>
           </p>
           <p className="text-sm text-gray-700">
-            Connected Account Customer ID:{" "}
+            Coverdash Customer ID:{" "}
             <code className="bg-gray-100 px-2 py-1 rounded">{result.customerId}</code>
           </p>
           <details className="mt-2">
