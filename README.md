@@ -4,6 +4,40 @@ This Next.js TypeScript project demonstrates a Stripe Connect OAuth integration 
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fcoverdash%2Fstripe-connect-nextjs-example&env=NEXT_PUBLIC_STRIPE_CLIENT_ID,STRIPE_SECRET_KEY,NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL)
 
+## Stripe Connect End-to-End Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant Partner
+    participant PartnerStripe as Partner Stripe Account
+    participant CoverdashStripe as Coverdash Stripe Account
+    participant Customer
+
+    rect rgb(235, 245, 255)
+        Note over Partner, CoverdashStripe: OAuth Connect Flow
+        Partner->>PartnerStripe: Initiate OAuth connect flow with Coverdash
+        PartnerStripe->>Partner: Redirect to Stripe OAuth authorization
+        Partner->>PartnerStripe: Authorize Coverdash as connected account
+        PartnerStripe->>CoverdashStripe: Return connected account ID
+        Note over CoverdashStripe: Connected account is now linked for future operations
+    end
+
+    rect rgb(240, 255, 244)
+        Note over Customer, CoverdashStripe: Payment Method Cloning
+        Customer->>Partner: Make payment on Partner platform
+        Partner->>PartnerStripe: Create/store customer's payment method
+        PartnerStripe->>CoverdashStripe: Clone customer's payment method
+        Note over CoverdashStripe: Cloned payment method is now available on Coverdash side
+    end
+
+    rect rgb(255, 245, 238)
+        Note over CoverdashStripe, Customer: Direct Charges
+        CoverdashStripe->>CoverdashStripe: Create direct charge with cloned payment method
+        CoverdashStripe->>Customer: Process charge directly (not through Partner)
+        Note over Customer: Customer is charged securely without re-entering payment details
+    end
+```
+
 ## Overview
 
 In this example, Platform A provides this application to Merchant B, allowing them to:
