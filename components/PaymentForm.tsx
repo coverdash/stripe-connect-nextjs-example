@@ -1,3 +1,15 @@
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getConnectedAccountIdClient } from "@/lib/storage";
 import { useState } from "react";
 
@@ -31,7 +43,7 @@ export default function PaymentForm() {
         body: JSON.stringify({
           connectedAccountId,
           paymentMethodId,
-          amount: parseInt(amount) * 100, // Convert to cents
+          amount: Math.round(parseFloat(amount) * 100),
           currency,
           description,
         }),
@@ -52,92 +64,84 @@ export default function PaymentForm() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-2xl font-bold mb-4">Create Direct Charge</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Payment Method ID
-          </label>
-          <input
-            type="text"
-            value={paymentMethodId}
-            onChange={(e) => setPaymentMethodId(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            placeholder="pm_xxxxxxxxxxxxx"
-            required
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            The cloned payment method ID from the connected account
-          </p>
-        </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Create Direct Charge</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="payment-method-id">Payment Method ID</Label>
+            <Input
+              id="payment-method-id"
+              type="text"
+              value={paymentMethodId}
+              onChange={(e) => setPaymentMethodId(e.target.value)}
+              placeholder="pm_xxxxxxxxxxxxx"
+              required
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Amount (in dollars)
-          </label>
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            placeholder="10.99"
-            step="0.01"
-            required
-          />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="amount">Amount (in dollars)</Label>
+            <Input
+              id="amount"
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="10.99"
+              step="0.01"
+              min="0.01"
+              required
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Currency
-          </label>
-          <select
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-          >
-            <option value="usd">USD</option>
-            <option value="eur">EUR</option>
-            <option value="gbp">GBP</option>
-          </select>
-        </div>
+          <div className="space-y-2">
+            <Label>Currency</Label>
+            <Select value={currency} onValueChange={setCurrency}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a currency" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="usd">USD</SelectItem>
+                <SelectItem value="eur">EUR</SelectItem>
+                <SelectItem value="gbp">GBP</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description (optional)
-          </label>
-          <input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            placeholder="Payment description"
-          />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description (optional)</Label>
+            <Input
+              id="description"
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Payment description"
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full bg-[#635BFF] text-white py-2 px-4 rounded-md hover:bg-[#4F46E5] disabled:opacity-50"
-        >
-          {isLoading ? "Processing..." : "Create Charge"}
-        </button>
-      </form>
+          <Button type="submit" disabled={isLoading} className="w-full bg-[#635BFF] hover:bg-[#4F46E5]">
+            {isLoading ? "Processing..." : "Create Charge"}
+          </Button>
+        </form>
 
-      {error && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-red-800">{error}</p>
-        </div>
-      )}
+        {error && (
+          <Alert variant="destructive" className="mt-4">
+            <AlertTitle>Charge failed</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {result && (
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-          <p className="text-green-800 font-semibold">Charge successful!</p>
-          <pre className="mt-2 text-xs text-gray-700 overflow-auto">
-            {JSON.stringify(result, null, 2)}
-          </pre>
-        </div>
-      )}
-    </div>
+        {result && (
+          <Alert className="mt-4">
+            <AlertTitle>Charge successful!</AlertTitle>
+            <AlertDescription>
+              <pre className="mt-2 text-xs overflow-auto">{JSON.stringify(result, null, 2)}</pre>
+            </AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
   );
 }

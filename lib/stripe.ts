@@ -3,7 +3,7 @@ import { config } from "./config";
 
 export function getStripeClient(): Stripe {
   return new Stripe(config.stripe.secretKey, {
-    apiVersion: "2024-11-20.acacia",
+    apiVersion: "2023-10-16",
   });
 }
 
