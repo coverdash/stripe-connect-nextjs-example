@@ -150,6 +150,40 @@ yarn start
 
 ## How It Works
 
+### User Journey: Partner Charging a Customer for Insurance
+
+```mermaid
+sequenceDiagram
+    participant Customer as Customer
+    participant Partner as Partner Platform
+    participant PartnerAPI as Partner Backend
+    participant Stripe as Stripe API
+    participant Coverdash as Coverdash (Connected Account)
+
+    Note over Coverdash,Partner: One-Time Setup
+    Coverdash->>Stripe: OAuth: Authorize Partner platform
+    Stripe-->>PartnerAPI: Returns acct_xxxCoverdash (connected account ID)
+    PartnerAPI->>PartnerAPI: Store connected account ID
+
+    Note over Customer,Coverdash: Customer Onboarding
+    Customer->>Partner: Signs up, adds payment method
+    Partner->>PartnerAPI: Store customer + payment method (pm_original)
+
+    Note over Customer,Coverdash: Policy Purchase
+    Customer->>Partner: Selects Coverdash insurance policy
+    PartnerAPI->>Stripe: Clone payment method to Coverdash<br/>PaymentMethods.create({customer, payment_method},<br/>{stripeAccount: "acct_xxxCoverdash"})
+    Stripe-->>PartnerAPI: Returns pm_cloned (on Coverdash's account)
+
+    PartnerAPI->>Stripe: Create direct charge<br/>PaymentIntents.create({amount, payment_method: pm_cloned},<br/>{stripeAccount: "acct_xxxCoverdash"})
+    Stripe-->>Coverdash: Payment lands in Coverdash's Stripe
+    Stripe-->>PartnerAPI: PaymentIntent confirmed
+
+    PartnerAPI-->>Partner: Charge successful
+    Partner-->>Customer: Policy activated ✅
+
+    Note over Customer,Coverdash: Key: Partner's API key makes all calls.<br/>stripeAccount header routes to Coverdash.
+```
+
 ### OAuth Flow
 
 1. Merchant B clicks "Connect with Stripe" button
