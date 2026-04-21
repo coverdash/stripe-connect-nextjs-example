@@ -2,7 +2,10 @@ import { getConnectedAccountIdClient } from "@/lib/storage";
 import { useState } from "react";
 
 type CloneTriggerProps = {
-  onCloneSuccess?: (data: { paymentMethodId: string; customerId: string }) => void;
+  onCloneSuccess?: (data: {
+    paymentMethodId: string;
+    customerId: string;
+  }) => void;
 };
 
 export default function CloneTrigger({ onCloneSuccess }: CloneTriggerProps) {
@@ -32,8 +35,8 @@ export default function CloneTrigger({ onCloneSuccess }: CloneTriggerProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           connectedAccountId,
-          customerId,
-          paymentMethodId,
+          partnerCustomerId: customerId,
+          partnerCustomerPaymentId: paymentMethodId,
         }),
       });
 
@@ -120,11 +123,15 @@ export default function CloneTrigger({ onCloneSuccess }: CloneTriggerProps) {
           </p>
           <p className="text-sm text-gray-700">
             Cloned Payment Method ID:{" "}
-            <code className="bg-gray-100 px-2 py-1 rounded">{result.paymentMethodId}</code>
+            <code className="bg-gray-100 px-2 py-1 rounded">
+              {result.paymentMethodId}
+            </code>
           </p>
           <p className="text-sm text-gray-700">
             Coverdash Customer ID:{" "}
-            <code className="bg-gray-100 px-2 py-1 rounded">{result.customerId}</code>
+            <code className="bg-gray-100 px-2 py-1 rounded">
+              {result.customerId}
+            </code>
           </p>
           <details className="mt-2">
             <summary className="cursor-pointer text-sm text-gray-600">

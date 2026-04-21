@@ -107,6 +107,15 @@ export default function Home() {
               </div>
             </div>
 
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-sm text-purple-900">
+              Alternative flow: clone a partner PM onto the connected account and charge it on-session, without creating a Coverdash customer or attaching the PM.
+              <div className="mt-2">
+                <Link href="/pm-only" className="text-[#635BFF] hover:underline font-medium">
+                  Go to PM-Only Clone + Charge →
+                </Link>
+              </div>
+            </div>
+
             <CloneTrigger
               onCloneSuccess={({ paymentMethodId, customerId }) => {
                 setClonedPaymentMethodId(paymentMethodId);

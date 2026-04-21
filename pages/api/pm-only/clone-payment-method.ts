@@ -1,37 +1,41 @@
-import { cloneAndAttachPaymentMethod } from "@/lib/stripe";
+import { createPaymentMethodOnConnectedAccount } from "@/lib/stripe";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const { connectedAccountId, partnerCustomerId, partnerCustomerPaymentId } = req.body;
+    const { connectedAccountId, partnerCustomerId, partnerCustomerPaymentId } =
+      req.body;
 
-    if (!connectedAccountId || !partnerCustomerId || !partnerCustomerPaymentId) {
+    if (
+      !connectedAccountId ||
+      !partnerCustomerId ||
+      !partnerCustomerPaymentId
+    ) {
       return res.status(400).json({
-        error: "connectedAccountId, partnerCustomerId, and partnerCustomerPaymentId are required",
+        error:
+          "connectedAccountId, partnerCustomerId, and partnerCustomerPaymentId are required",
       });
     }
 
-    const { customer, paymentMethod } = await cloneAndAttachPaymentMethod(
+    const paymentMethod = await createPaymentMethodOnConnectedAccount(
       connectedAccountId,
       partnerCustomerId,
-      partnerCustomerPaymentId
+      partnerCustomerPaymentId,
     );
 
     return res.json({
       paymentMethodId: paymentMethod.id,
-      customerId: customer.id,
-      customer,
       paymentMethod,
     });
   } catch (error) {
-    console.error("Payment method cloning error:", error);
+    console.error("PM-only clone error:", error);
     return res.status(500).json({
       error:
         error instanceof Error

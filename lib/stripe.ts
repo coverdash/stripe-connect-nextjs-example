@@ -13,24 +13,22 @@ export function getCoverdashStripeClient(): Stripe {
   });
 }
 
-export async function clonePaymentMethod(
+export async function createPaymentMethodOnConnectedAccount(
   connectedAccountId: string,
-  customerId: string,
-  paymentMethodId: string
+  partnerCustomerId: string,
+  partnerCustomerPaymentId: string,
 ): Promise<Stripe.PaymentMethod> {
   const stripe = getStripeClient();
 
-  const clonedPaymentMethod = await stripe.paymentMethods.create(
+  return stripe.paymentMethods.create(
     {
-      customer: customerId,
-      payment_method: paymentMethodId,
+      customer: partnerCustomerId,
+      payment_method: partnerCustomerPaymentId,
     },
     {
       stripeAccount: connectedAccountId,
-    }
+    },
   );
-
-  return clonedPaymentMethod;
 }
 
 export async function createDirectCharge(
@@ -39,7 +37,7 @@ export async function createDirectCharge(
   amount: number,
   currency: string,
   description?: string,
-  customerId?: string
+  customerId?: string,
 ): Promise<Stripe.PaymentIntent> {
   const stripe = getStripeClient();
 
@@ -55,17 +53,44 @@ export async function createDirectCharge(
     },
     {
       stripeAccount: connectedAccountId,
-    }
+    },
   );
 
   return paymentIntent;
+}
+
+export async function createDirectChargeWithoutCustomer(
+  connectedAccountId: string,
+  paymentMethodId: string,
+  amount: number,
+  currency: string,
+  description?: string,
+): Promise<Stripe.PaymentIntent> {
+  const stripe = getStripeClient();
+
+  return stripe.paymentIntents.create(
+    {
+      payment_method: paymentMethodId,
+      amount,
+      currency,
+      description,
+      confirm: true,
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: "never",
+      },
+    },
+    {
+      stripeAccount: connectedAccountId,
+    },
+  );
 }
 
 export async function createCustomerOnConnectedAccount(
   connectedAccountId: string,
   email: string,
   name: string,
-  paymentMethodId?: string
+  paymentMethodId?: string,
 ): Promise<Stripe.Customer> {
   const stripe = getStripeClient();
 
@@ -88,47 +113,47 @@ export async function createCustomerOnConnectedAccount(
 export async function cloneAndAttachPaymentMethod(
   connectedAccountId: string,
   partnerCustomerId: string,
-  paymentMethodId: string
+  partnerCustomerPaymentId: string,
 ): Promise<{ customer: Stripe.Customer; paymentMethod: Stripe.PaymentMethod }> {
   const stripe = getStripeClient();
 
-  const clonedPaymentMethod = await clonePaymentMethod(
-    connectedAccountId,
-    partnerCustomerId,
-    paymentMethodId
-  );
-
-  const connectedCustomer = await createCustomerOnConnectedAccount(
+  const coverdashCustomer = await createCustomerOnConnectedAccount(
     connectedAccountId,
     `${partnerCustomerId}@example.com`,
-    `Coverdash customer for ${partnerCustomerId}`
+    `Coverdash customer for ${partnerCustomerId}`,
+  );
+
+  const coverdashPaymentMethod = await createPaymentMethodOnConnectedAccount(
+    connectedAccountId,
+    partnerCustomerId,
+    partnerCustomerPaymentId,
   );
 
   await stripe.paymentMethods.attach(
-    clonedPaymentMethod.id,
+    coverdashPaymentMethod.id,
     {
-      customer: connectedCustomer.id,
+      customer: coverdashCustomer.id,
     },
     {
       stripeAccount: connectedAccountId,
-    }
+    },
   );
 
   await stripe.customers.update(
-    connectedCustomer.id,
+    coverdashCustomer.id,
     {
       invoice_settings: {
-        default_payment_method: clonedPaymentMethod.id,
+        default_payment_method: coverdashPaymentMethod.id,
       },
     },
     {
       stripeAccount: connectedAccountId,
-    }
+    },
   );
 
   return {
-    customer: connectedCustomer,
-    paymentMethod: clonedPaymentMethod,
+    customer: coverdashCustomer,
+    paymentMethod: coverdashPaymentMethod,
   };
 }
 
@@ -137,7 +162,7 @@ export async function createCoverdashIndependentCharge(
   paymentMethodId: string,
   amount: number,
   currency: string,
-  description?: string
+  description?: string,
 ): Promise<Stripe.PaymentIntent> {
   const stripe = getCoverdashStripeClient();
 
@@ -153,7 +178,7 @@ export async function createCoverdashIndependentCharge(
 }
 
 export async function getConnectedAccountDetails(
-  connectedAccountId: string
+  connectedAccountId: string,
 ): Promise<Stripe.Account> {
   const stripe = getStripeClient();
   return stripe.accounts.retrieve(connectedAccountId);
